@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>使用SSH无密码登陆远程主机总结 | EleWays</title>
+  <meta name="viewport" content="width=device-width">
+  <meta name="description" content="背景
+由于楼上实验室的服务器密码实在太复杂了，每次输密码都出错，所以昨天就想配置一下SSH（Security Shell）来实现免密码登陆。由于之前使用Git的过程中已经弄过了，所以觉得应该很快就搞定，没想到昨天一天就耗在上面了～～">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用SSH无密码登陆远程主机总结">
+<meta property="og:url" content="http://www.eleways.com/2014/03/13/ssh-login-without-password/">
+<meta property="og:site_name" content="EleWays">
+<meta property="og:description" content="背景
+由于楼上实验室的服务器密码实在太复杂了，每次输密码都出错，所以昨天就想配置一下SSH（Security Shell）来实现免密码登陆。由于之前使用Git的过程中已经弄过了，所以觉得应该很快就搞定，没想到昨天一天就耗在上面了～～">
+<meta property="og:image" content="http://eleways.qiniudn.com/identify.png">
+<meta property="og:image" content="http://eleways.qiniudn.com/ssh-copy-id.png">
+<meta property="og:image" content="http://eleways.qiniudn.com/ssh-copy-id-s.png">
+<meta property="og:image" content="http://eleways.qiniudn.com/ssh-config.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用SSH无密码登陆远程主机总结">
+<meta name="twitter:description" content="背景
+由于楼上实验室的服务器密码实在太复杂了，每次输密码都出错，所以昨天就想配置一下SSH（Security Shell）来实现免密码登陆。由于之前使用Git的过程中已经弄过了，所以觉得应该很快就搞定，没想到昨天一天就耗在上面了～～">
+
+  
+    <link rel="alternative" href="/atom.xml" title="EleWays" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+<body>
+  <div id="container">
+    <div class="mobile-nav-panel">
+	<i class="icon-reorder icon-large"></i>
+</div>
+<header id="header">
+	<h1 class="blog-title">
+		<a href="/">EleWays</a>
+	</h1>
+	<nav class="nav">
+		<ul>
+			<li><a href="/">Home</a></li><li><a href="/archives">Archives</a></li>
+			<li><a id="nav-search-btn" class="nav-icon" title="Search"></a></li>
+			<li><a href="/atom.xml" id="nav-rss-link" class="nav-icon" title="RSS Feed"></a></li>
+		</ul>
+	</nav>
+	<div id="search-form-wrap">
+		<form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://www.eleways.com"></form>
+	</div>
+</header>
+    <div id="main">
+      <article id="post-ssh-login-without-password" class="post">
+	<footer class="entry-meta-header">
+		<span class="meta-elements date">
+			<a href="/2014/03/13/ssh-login-without-password/" class="article-date">
+  <time datetime="2014-03-13T07:08:56.000Z" itemprop="datePublished">3月 13 2014</time>
+</a>
+		</span>
+		<span class="meta-elements author">Yibin</span>
+		<div class="commentscount">
+			
+		</div>
+	</footer>
+	<!--
+	
+	-->
+	<header class="entry-header">
+		
+  
+    <h1 class="article-title entry-title" itemprop="name">
+      使用SSH无密码登陆远程主机总结
+    </h1>
+  
+
+	</header>
+	<div class="entry-content">
+		
+    	<h3 id="背景">背景</h3>
+<p>由于楼上实验室的服务器密码实在太复杂了，每次输密码都出错，所以昨天就想配置一下SSH（Security Shell）来实现免密码登陆。由于之前使用Git的过程中已经弄过了，所以觉得应该很快就搞定，没想到昨天一天就耗在上面了～～</p>
+<a id="more"></a>
+
+<h3 id="原理">原理</h3>
+<p>SSH生成公钥和私钥，而公钥和私钥一一对应的，公钥可以解开私钥加密的信息，反之亦然。公钥，顾名思义，就是公开的，不需要保密;而私钥是要保管好的。当用户希望登陆服务器时，服务器会用用户事先保存在服务器端的公钥加密一段信息，然后发送给用户，用户使用自己的私钥解开并把信息返回给服务器，如果返回的信息正确，则说明用户是可信的，可以登陆。</p>
+<h3 id="流程">流程</h3>
+<ol>
+<li><h4 id="生成密钥对">生成密钥对</h4>
+ <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh-keygen -f <span class="tag">&lt;<span class="title">i</span>&gt;</span>路径/文件名<span class="tag">&lt;/<span class="title">i</span>&gt;</span> -C  <span class="tag">&lt;<span class="title">i</span>&gt;</span>注释<span class="tag">&lt;/<span class="title">i</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p> 说明：-f 指定私钥的名字，该参数是可选的，默认会使用id_rsa。</p>
+</li>
+<li><h4 id="设置私钥口令">设置私钥口令</h4>
+<p> 执行上面语句后，会提示输入私钥口令。私钥口令的作用就是：即使别人拿到你的私钥，如果没有口令，那么也无法登陆到远程主机，所以强烈建议设置。</p>
+<p> <img src="http://eleways.qiniudn.com/identify.png" alt="图：生成密钥的过程"></p>
+</li>
+<li><h4 id="复制公钥到服务器上">复制公钥到服务器上</h4>
+ <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh-copy-id -<span class="built_in">i</span>  &lt;<span class="built_in">i</span>&gt;路径/密钥名&lt;/<span class="built_in">i</span>&gt;    &lt;<span class="built_in">i</span>&gt;用户名@主机名&lt;/<span class="built_in">i</span>&gt; </div></pre></td></tr></table></figure>
+
+<p> 说明：-i指定上传的密钥名，只需写私钥名就可以了，ssh客户端会根据私钥的名字，找到对应的公钥文件。假如私钥文件名是<code>mykey</code>，那么公钥名就是<code>mykey.pub</code>。这个命令实际上就是将公钥文件的内容复制到服务器下，指定用户名下的<code>.ssh/authorized_keys</code>文件中。</p>
+<p> <img src="http://eleways.qiniudn.com/ssh-copy-id.png" alt="图：复制公钥到远程主机"></p>
+<p> 根据提示输入远程主机的登陆密码后，会提示已添加的密钥数。</p>
+<p> <img src="http://eleways.qiniudn.com/ssh-copy-id-s.png" alt="图：成功复制公钥到远程主机"></p>
+</li>
+<li><h4 id="登陆远程主机">登陆远程主机</h4>
+<p> 如果在生成密钥对的时候，没有自定义文件名，那么配置到这里就算可以了，使用<code>ssh 用户名@主机</code>就可以登陆成功了。但是如果自定义文件名（昨天折腾了一整天，就是这个原因～～），那么还需要往下看。</p>
+<p> 如果自定了密钥的文件名，那么直接<code>ssh 用户名@主机</code>会发现还是需要输入密码。这是为什么呢？通过<code>ssh -v 用户名@主机</code>可以查看ssh验证的过程，可以发现ssh客户端在登陆过程中，默认只会使用<code>.ssh/id_rsa</code>、<code>.ssh/id_dsa</code>以及<code>.ssh/id_ecdsa</code>来解密。</p>
+<p> 这里有3种方法可以解决这个问题：</p>
+<ul>
+<li><h5 id="方案一：使用参数_-i指定私钥的名称">方案一：使用参数 <code>-i</code>指定私钥的名称</h5>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="tag">ssh</span> <span class="tag">-i</span> 私钥名 用户名<span class="at_rule">@<span class="keyword">主机</span></span></div></pre></td></tr></table></figure>
+</li>
+<li><h5 id="方案二：在ssh的配置文件中，对远程主机的密钥文件进行指定">方案二：在ssh的配置文件中，对远程主机的密钥文件进行指定</h5>
+<p>  在<code>/etc/ssh/ssh_config</code>文件中，我们可以看到如下配置：</p>
+<p>  <img src="http://eleways.qiniudn.com/ssh-config.png" alt="图：ssh客户端配置文件"></p>
+<p>  从上图就可以看出，ssh客户端默认只使用<code>.ssh/id_rsa</code>、<code>.ssh/id_dsa</code>以及<code>.ssh/id_ecdsa</code>来解密（注释代表默认情况）。假设我们的远程主机名是<code>www.baidu.com</code>，私钥名是<code>mykey</code>,那么可以在该文件中添加如下记录：</p>
+<pre><code>  Host www.baidu.<span class="keyword">com</span>
+      IdentityFile ~/.ssh/mykey
+</code></pre></li>
+<li><h5 id="方案三：_使用ssh代理程序，把私钥添加到代理中。">方案三： 使用ssh代理程序，把私钥添加到代理中。</h5>
+<p>《SSH权威指南》中提到，SSH代理是一个管理私钥的缓冲区，并对SSH客户端发出的认证请求作出响应的程序。代理可以把解密的私钥存储在内存中。当把私钥加入代理时，需要输入口令，然后直到终止代理程序，都不再需要输入口令。</p>
+<p>与代理有关的程序是<code>ssh-agent</code>和<code>ssh-add</code>。<code>ssh-agent</code>负责运行代理，而<code>ssh-add</code>负责往代理中插入和移除密钥。</p>
+  <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">ssh-<span class="built_in">add</span> .ssh/私钥名    加入私钥</div><div class="line">ssh-<span class="built_in">add</span> -<span class="keyword">l</span>            列出所有已加入的私钥指纹和名称</div><div class="line">ssh-<span class="built_in">add</span> -D            删除所有已加入的私钥</div><div class="line">ssh-<span class="built_in">add</span> -<span class="keyword">d</span> 私钥名      删除知道私钥</div></pre></td></tr></table></figure>
+
+<p>注意：<code>ssh-agent</code>代理程序必须先运行，才能添加私钥。如果本地通过Ubuntu图形界面登陆的话，会自动运行。如果本地通过终端登陆，那么可以执行</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">eval</span> <span class="string">`ssh-agent`</span></div></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><h4 id="定时更改私钥口令">定时更改私钥口令</h4>
+ <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh-keygen -p <span class="operator">-f</span> 私钥名 -P 就口令 -N 新口令</div></pre></td></tr></table></figure>
+</li>
+</ol>
+
+    
+	</div>
+	<footer class="entry-footer">
+		<div class="entry-meta-footer">
+			<span class="category">
+				
+			</span>
+			<span class="tags">
+				
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SSH/">SSH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ubuntu/">Ubuntu</a></li></ul>
+
+			</span>
+		</div>
+	</footer>
+	
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2014/03/09/how-to-use-wallproxy-on-ubuntu/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">
+        
+          如何在Ubuntu上安装Wallproxy
+        
+      </div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+
+<section id="comments">
+  <!--
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  -->
+  <!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="使用SSH无密码登陆远程主机总结" data-title="使用SSH无密码登陆远程主机总结" data-url="2014/03/13/ssh-login-without-password/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"eleways"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+ 
+</section>
+
+
+    </div>
+    <div class="mb-search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.eleways.com">
+  </form>
+</div>
+<footer id="footer">
+	<h1 class="footer-blog-title">
+		<a href="/">EleWays</a>
+	</h1>
+	<span class="copyright">
+		&copy; 2014 Yibin<br>
+		Modify from <a href="http://sanographix.github.io/tumblr/apollo/" target="_blank">Apollo</a> theme, designed by <a href="http://www.sanographix.net/" target="_blank">SANOGRAPHIX.NET</a><br>
+		Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+	</span>
+</footer>
+    
+
+<!--
+<script src="//cdn.staticfile.org/jquery/2.1.1-rc2/jquery.min.js"></script>
+-->
+<script src="/js/jquery.min.js" type="text/javascript"></script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>sha-1哈希的结果永远一致吗？ | EleWays</title>
+  <meta name="viewport" content="width=device-width">
+  <meta name="description" content="问题提出
+这两天在学习Git的工作原理，了解到Git会每一个文件的内容使用SHA-1进行哈希。刚开始在宿舍的笔记本安装了msysGit，照着《Pro Git》这本书的示例操作了一遍，产生的哈希值与书上给的是一致的，这符合我的理解。然而，今天在实验室使用GitHub的Git shell，哈希的结果却不一致，这让我很诧异。根据数据结构课程上学到的理论，应该是一致才对的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sha-1哈希的结果永远一致吗？">
+<meta property="og:url" content="http://www.eleways.com/2014/03/08/is-sha-1-hash-always-the-same/">
+<meta property="og:site_name" content="EleWays">
+<meta property="og:description" content="问题提出
+这两天在学习Git的工作原理，了解到Git会每一个文件的内容使用SHA-1进行哈希。刚开始在宿舍的笔记本安装了msysGit，照着《Pro Git》这本书的示例操作了一遍，产生的哈希值与书上给的是一致的，这符合我的理解。然而，今天在实验室使用GitHub的Git shell，哈希的结果却不一致，这让我很诧异。根据数据结构课程上学到的理论，应该是一致才对的。">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="sha-1哈希的结果永远一致吗？">
+<meta name="twitter:description" content="问题提出
+这两天在学习Git的工作原理，了解到Git会每一个文件的内容使用SHA-1进行哈希。刚开始在宿舍的笔记本安装了msysGit，照着《Pro Git》这本书的示例操作了一遍，产生的哈希值与书上给的是一致的，这符合我的理解。然而，今天在实验室使用GitHub的Git shell，哈希的结果却不一致，这让我很诧异。根据数据结构课程上学到的理论，应该是一致才对的。">
+
+  
+    <link rel="alternative" href="/atom.xml" title="EleWays" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+</head>
+<body>
+  <div id="container">
+    <div class="mobile-nav-panel">
+	<i class="icon-reorder icon-large"></i>
+</div>
+<header id="header">
+	<h1 class="blog-title">
+		<a href="/">EleWays</a>
+	</h1>
+	<nav class="nav">
+		<ul>
+			<li><a href="/">Home</a></li><li><a href="/archives">Archives</a></li>
+			<li><a id="nav-search-btn" class="nav-icon" title="Search"></a></li>
+			<li><a href="/atom.xml" id="nav-rss-link" class="nav-icon" title="RSS Feed"></a></li>
+		</ul>
+	</nav>
+	<div id="search-form-wrap">
+		<form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://www.eleways.com"></form>
+	</div>
+</header>
+    <div id="main">
+      <article id="post-is-sha-1-hash-always-the-same" class="post">
+	<footer class="entry-meta-header">
+		<span class="meta-elements date">
+			<a href="/2014/03/08/is-sha-1-hash-always-the-same/" class="article-date">
+  <time datetime="2014-03-08T11:54:50.000Z" itemprop="datePublished">3月 8 2014</time>
+</a>
+		</span>
+		<span class="meta-elements author">Yibin</span>
+		<div class="commentscount">
+			
+		</div>
+	</footer>
+	<!--
+	
+	-->
+	<header class="entry-header">
+		
+  
+    <h1 class="article-title entry-title" itemprop="name">
+      sha-1哈希的结果永远一致吗？
+    </h1>
+  
+
+	</header>
+	<div class="entry-content">
+		
+    	<h3 id="问题提出"><strong>问题提出</strong></h3>
+<p>这两天在学习Git的工作原理，了解到Git会每一个文件的内容使用<code>SHA-1</code>进行哈希。刚开始在宿舍的笔记本安装了<code>msysGit</code>，照着《Pro Git》这本书的示例操作了一遍，产生的哈希值与书上给的是一致的，这符合我的理解。然而，今天在实验室使用<code>GitHub</code>的<code>Git shell</code>，哈希的结果却不一致，这让我很诧异。根据数据结构课程上学到的理论，应该是一致才对的。   </p>
+<a id="more"></a> 
+
+<h3 id="检索资料"><strong>检索资料</strong></h3>
+<p>Google了一下，刚好就找到了一个与我有同样疑惑的人提出的问题——<a href="http://security.stackexchange.com/questions/18290/is-sha-1-hash-always-the-same" target="_blank" rel="external">Is sha-1 hash always the same?</a>  </p>
+<p>根据采纳的回答，我自己理解了一下，总结如下：  </p>
+<ol>
+<li>哈希函数的结果具有确定性，即<strong>同样的输入，会产生同样的输出</strong>；  </li>
+<li><strong>哈希函数的输入是一串二进制位向量</strong>。当我们要哈希一串字符串时，哈希函数读取的不是这一串字符，而是该字符串对应的二进制位向量——这就是问题所在。由于不同的编码方式产生的二进制位向量通常不同，所以哈希的结果自然也就不同。  </li>
+<li>可以肯定的是，在相同环境下，相同的文本哈希的结果肯定是一样的；而不同的编码环境，文本哈希的结果通常不同。</li>
+</ol>
+
+    
+	</div>
+	<footer class="entry-footer">
+		<div class="entry-meta-footer">
+			<span class="category">
+				
+			</span>
+			<span class="tags">
+				
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/git/">git</a></li></ul>
+
+			</span>
+		</div>
+	</footer>
+	
+    
+<nav id="article-nav">
+  
+    <a href="/2014/03/09/how-to-use-wallproxy-on-ubuntu/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          如何在Ubuntu上安装Wallproxy
+        
+      </div>
+    </a>
+  
+  
+</nav>
+
+  
+</article>
+
+
+
+
+<section id="comments">
+  <!--
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  -->
+  <!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="sha-1哈希的结果永远一致吗？" data-title="sha-1哈希的结果永远一致吗？" data-url="2014/03/08/is-sha-1-hash-always-the-same/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"eleways"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+ 
+</section>
+
+
+    </div>
+    <div class="mb-search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:www.eleways.com">
+  </form>
+</div>
+<footer id="footer">
+	<h1 class="footer-blog-title">
+		<a href="/">EleWays</a>
+	</h1>
+	<span class="copyright">
+		&copy; 2014 Yibin<br>
+		Modify from <a href="http://sanographix.github.io/tumblr/apollo/" target="_blank">Apollo</a> theme, designed by <a href="http://www.sanographix.net/" target="_blank">SANOGRAPHIX.NET</a><br>
+		Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+	</span>
+</footer>
+    
+
+<!--
+<script src="//cdn.staticfile.org/jquery/2.1.1-rc2/jquery.min.js"></script>
+-->
+<script src="/js/jquery.min.js" type="text/javascript"></script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+
+  </div>
+</body>
+</html>
