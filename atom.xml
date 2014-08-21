@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title><![CDATA[EleWays]]></title>
+  
+  <link href="/atom.xml" rel="self"/>
+  <link href="http://www.eleways.com/"/>
+  <updated>2014-08-21T05:07:11.857Z</updated>
+  <id>http://www.eleways.com/</id>
+  
+  <author>
+    <name><![CDATA[Yibin]]></name>
+    
+  </author>
+  
+  <generator uri="http://zespia.tw/hexo/">Hexo</generator>
+  
+  <entry>
+    <title><![CDATA[使用SSH无密码登陆远程主机总结]]></title>
+    <link href="http://www.eleways.com/2014/03/13/ssh-login-without-password/"/>
+    <id>http://www.eleways.com/2014/03/13/ssh-login-without-password/</id>
+    <published>2014-03-13T07:08:56.000Z</published>
+    <updated>2014-08-20T14:35:45.000Z</updated>
+    <content type="html"><![CDATA[<h3 id="背景">背景</h3>
+<p>由于楼上实验室的服务器密码实在太复杂了，每次输密码都出错，所以昨天就想配置一下SSH（Security Shell）来实现免密码登陆。由于之前使用Git的过程中已经弄过了，所以觉得应该很快就搞定，没想到昨天一天就耗在上面了～～</p>
+<a id="more"></a>
+
+<h3 id="原理">原理</h3>
+<p>SSH生成公钥和私钥，而公钥和私钥一一对应的，公钥可以解开私钥加密的信息，反之亦然。公钥，顾名思义，就是公开的，不需要保密;而私钥是要保管好的。当用户希望登陆服务器时，服务器会用用户事先保存在服务器端的公钥加密一段信息，然后发送给用户，用户使用自己的私钥解开并把信息返回给服务器，如果返回的信息正确，则说明用户是可信的，可以登陆。</p>
+<h3 id="流程">流程</h3>
+<ol>
+<li><h4 id="生成密钥对">生成密钥对</h4>
+ <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh-keygen -f <span class="tag">&lt;<span class="title">i</span>&gt;</span>路径/文件名<span class="tag">&lt;/<span class="title">i</span>&gt;</span> -C  <span class="tag">&lt;<span class="title">i</span>&gt;</span>注释<span class="tag">&lt;/<span class="title">i</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p> 说明：-f 指定私钥的名字，该参数是可选的，默认会使用id_rsa。</p>
+</li>
+<li><h4 id="设置私钥口令">设置私钥口令</h4>
+<p> 执行上面语句后，会提示输入私钥口令。私钥口令的作用就是：即使别人拿到你的私钥，如果没有口令，那么也无法登陆到远程主机，所以强烈建议设置。</p>
+<p> <img src="http://eleways.qiniudn.com/identify.png" alt="图：生成密钥的过程"></p>
+</li>
+<li><h4 id="复制公钥到服务器上">复制公钥到服务器上</h4>
+ <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh-copy-id -<span class="built_in">i</span>  &lt;<span class="built_in">i</span>&gt;路径/密钥名&lt;/<span class="built_in">i</span>&gt;    &lt;<span class="built_in">i</span>&gt;用户名@主机名&lt;/<span class="built_in">i</span>&gt; </div></pre></td></tr></table></figure>
+
+<p> 说明：-i指定上传的密钥名，只需写私钥名就可以了，ssh客户端会根据私钥的名字，找到对应的公钥文件。假如私钥文件名是<code>mykey</code>，那么公钥名就是<code>mykey.pub</code>。这个命令实际上就是将公钥文件的内容复制到服务器下，指定用户名下的<code>.ssh/authorized_keys</code>文件中。</p>
+<p> <img src="http://eleways.qiniudn.com/ssh-copy-id.png" alt="图：复制公钥到远程主机"></p>
+<p> 根据提示输入远程主机的登陆密码后，会提示已添加的密钥数。</p>
+<p> <img src="http://eleways.qiniudn.com/ssh-copy-id-s.png" alt="图：成功复制公钥到远程主机"></p>
+</li>
+<li><h4 id="登陆远程主机">登陆远程主机</h4>
+<p> 如果在生成密钥对的时候，没有自定义文件名，那么配置到这里就算可以了，使用<code>ssh 用户名@主机</code>就可以登陆成功了。但是如果自定义文件名（昨天折腾了一整天，就是这个原因～～），那么还需要往下看。</p>
+<p> 如果自定了密钥的文件名，那么直接<code>ssh 用户名@主机</code>会发现还是需要输入密码。这是为什么呢？通过<code>ssh -v 用户名@主机</code>可以查看ssh验证的过程，可以发现ssh客户端在登陆过程中，默认只会使用<code>.ssh/id_rsa</code>、<code>.ssh/id_dsa</code>以及<code>.ssh/id_ecdsa</code>来解密。</p>
+<p> 这里有3种方法可以解决这个问题：</p>
+<ul>
+<li><h5 id="方案一：使用参数_-i指定私钥的名称">方案一：使用参数 <code>-i</code>指定私钥的名称</h5>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="tag">ssh</span> <span class="tag">-i</span> 私钥名 用户名<span class="at_rule">@<span class="keyword">主机</span></span></div></pre></td></tr></table></figure>
+</li>
+<li><h5 id="方案二：在ssh的配置文件中，对远程主机的密钥文件进行指定">方案二：在ssh的配置文件中，对远程主机的密钥文件进行指定</h5>
+<p>  在<code>/etc/ssh/ssh_config</code>文件中，我们可以看到如下配置：</p>
+<p>  <img src="http://eleways.qiniudn.com/ssh-config.png" alt="图：ssh客户端配置文件"></p>
+<p>  从上图就可以看出，ssh客户端默认只使用<code>.ssh/id_rsa</code>、<code>.ssh/id_dsa</code>以及<code>.ssh/id_ecdsa</code>来解密（注释代表默认情况）。假设我们的远程主机名是<code>www.baidu.com</code>，私钥名是<code>mykey</code>,那么可以在该文件中添加如下记录：</p>
+<pre><code>  Host www.baidu.<span class="keyword">com</span>
+      IdentityFile ~/.ssh/mykey
+</code></pre></li>
+<li><h5 id="方案三：_使用ssh代理程序，把私钥添加到代理中。">方案三： 使用ssh代理程序，把私钥添加到代理中。</h5>
+<p>《SSH权威指南》中提到，SSH代理是一个管理私钥的缓冲区，并对SSH客户端发出的认证请求作出响应的程序。代理可以把解密的私钥存储在内存中。当把私钥加入代理时，需要输入口令，然后直到终止代理程序，都不再需要输入口令。</p>
+<p>与代理有关的程序是<code>ssh-agent</code>和<code>ssh-add</code>。<code>ssh-agent</code>负责运行代理，而<code>ssh-add</code>负责往代理中插入和移除密钥。</p>
+  <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">ssh-<span class="built_in">add</span> .ssh/私钥名    加入私钥</div><div class="line">ssh-<span class="built_in">add</span> -<span class="keyword">l</span>            列出所有已加入的私钥指纹和名称</div><div class="line">ssh-<span class="built_in">add</span> -D            删除所有已加入的私钥</div><div class="line">ssh-<span class="built_in">add</span> -<span class="keyword">d</span> 私钥名      删除知道私钥</div></pre></td></tr></table></figure>
+
+<p>注意：<code>ssh-agent</code>代理程序必须先运行，才能添加私钥。如果本地通过Ubuntu图形界面登陆的话，会自动运行。如果本地通过终端登陆，那么可以执行</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">eval</span> <span class="string">`ssh-agent`</span></div></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><h4 id="定时更改私钥口令">定时更改私钥口令</h4>
+ <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh-keygen -p <span class="operator">-f</span> 私钥名 -P 就口令 -N 新口令</div></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+    <summary type="html"><![CDATA[<h3 id="背景">背景</h3>
+<p>由于楼上实验室的服务器密码实在太复杂了，每次输密码都出错，所以昨天就想配置一下SSH（Security Shell）来实现免密码登陆。由于之前使用Git的过程中已经弄过了，所以觉得应该很快就搞定，没想到昨天一天就耗在上面了～～</p>
+]]></summary>
+    
+      <category term="Ubuntu" scheme="http://www.eleways.com/tags/Ubuntu/"/>
+    
+      <category term="SSH" scheme="http://www.eleways.com/tags/SSH/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[如何在Ubuntu上安装Wallproxy]]></title>
+    <link href="http://www.eleways.com/2014/03/09/how-to-use-wallproxy-on-ubuntu/"/>
+    <id>http://www.eleways.com/2014/03/09/how-to-use-wallproxy-on-ubuntu/</id>
+    <published>2014-03-09T08:05:52.000Z</published>
+    <updated>2014-08-20T10:55:44.000Z</updated>
+    <content type="html"><![CDATA[<h3 id="说明">说明</h3>
+<p>Wallproxy需要搭配Google的GAE才能工作，由于申请GAE比较简单，而且网上已经有很多图文教程，这里下面内容默认是已经配置GAE。浏览器使用Chrome.</p>
+<p><a id="more"></a></p>
+<h3 id="安装依赖">安装依赖</h3>
+<p>安装过程Wallproxy上面虽然有相应的文档，但是我推荐看<a href="https://code.google.com/p/goagent/wiki/GoAgent_Linux" target="_blank" rel="external">GoAgent的使用教程</a>，因为后者条理更清晰，安装过程都使用了Ubuntu的软件包管理器apt来安装，不容易出错。GoAgent的文档说明了各个依赖的作用，如果不想了解每个依赖的作用，可以在终端中，直接执行以下命令：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt-<span class="built_in">get</span> install <span class="keyword">python</span>-dev <span class="keyword">python</span>-greenlet <span class="keyword">python</span>-gevent <span class="keyword">python</span>-vte <span class="keyword">python</span>-openssl <span class="keyword">python</span>-crypto <span class="keyword">python</span>-appindicator</div></pre></td></tr></table></figure><br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt-<span class="built_in">get</span> install <span class="keyword">python</span>-dev <span class="keyword">python</span>-pip &amp;&amp; sudo pip install gevent --upgrade</div></pre></td></tr></table></figure>
+
+<h3 id="下载并配置Wallproxy">下载并配置Wallproxy</h3>
+<ol>
+<li><a href="http://goo.gl/D2UJv" target="_blank" rel="external">下载Wallproxy</a>并解压</li>
+<li>进入local目录中，执行<code>python startup.py</code>.这一步是在本地设置代理。</li>
+<li>进入server目录下，执行<code>python uploader.py</code>,输入GAE中的AppId后，输入<code>1</code>，然后再根据提示输入GAE的登陆邮箱和密码。</li>
+<li>访问<a href="http://127.0.0.1:8086/#proxy_ini" target="_blank" rel="external">http://127.0.0.1:8086/#proxy_ini</a>，找到如下部分，修改appid为第3步输入的内容，然后点右上角的<strong>保存</strong>按钮。</li>
+<li>在Chrome中安装SwitchySharp插件，然后进入SwitchySharp的配置页面，切换到<strong>导入/导出</strong>标签，选择<strong>从文件恢复</strong>,导入local/misc下的SwitchyOptions.bak文件。</li>
+<li>导入证书。打开Chrome的设置页面，在“首选项-&gt;高级-&gt;证书管理器”中，选择“授权中心”，导入local/cert下的CA.crt文件，然后在勾上所有复选框。</li>
+</ol>
+<h3 id="使用">使用</h3>
+<ol>
+<li>执行local下的startup.py文件;</li>
+<li>打开Chrome，点击SwitchySharp，选择“GAE代理”，然后访问<a href="www.youtube.com">youtube</a>，如果可以正常访问，那么说明操作成功，否则请检查以上操作。</li>
+</ol>
+]]></content>
+    <summary type="html"><![CDATA[<h3 id="说明">说明</h3>
+<p>Wallproxy需要搭配Google的GAE才能工作，由于申请GAE比较简单，而且网上已经有很多图文教程，这里下面内容默认是已经配置GAE。浏览器使用Chrome.</p>
+<p>]]></summary>
+    
+      <category term="Ubuntu" scheme="http://www.eleways.com/tags/Ubuntu/"/>
+    
+      <category term="Wallproxy" scheme="http://www.eleways.com/tags/Wallproxy/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[sha-1哈希的结果永远一致吗？]]></title>
+    <link href="http://www.eleways.com/2014/03/08/is-sha-1-hash-always-the-same/"/>
+    <id>http://www.eleways.com/2014/03/08/is-sha-1-hash-always-the-same/</id>
+    <published>2014-03-08T11:54:50.000Z</published>
+    <updated>2014-08-20T10:56:16.000Z</updated>
+    <content type="html"><![CDATA[<h3 id="问题提出"><strong>问题提出</strong></h3>
+<p>这两天在学习Git的工作原理，了解到Git会每一个文件的内容使用<code>SHA-1</code>进行哈希。刚开始在宿舍的笔记本安装了<code>msysGit</code>，照着《Pro Git》这本书的示例操作了一遍，产生的哈希值与书上给的是一致的，这符合我的理解。然而，今天在实验室使用<code>GitHub</code>的<code>Git shell</code>，哈希的结果却不一致，这让我很诧异。根据数据结构课程上学到的理论，应该是一致才对的。   </p>
+<a id="more"></a> 
+
+<h3 id="检索资料"><strong>检索资料</strong></h3>
+<p>Google了一下，刚好就找到了一个与我有同样疑惑的人提出的问题——<a href="http://security.stackexchange.com/questions/18290/is-sha-1-hash-always-the-same" target="_blank" rel="external">Is sha-1 hash always the same?</a>  </p>
+<p>根据采纳的回答，我自己理解了一下，总结如下：  </p>
+<ol>
+<li>哈希函数的结果具有确定性，即<strong>同样的输入，会产生同样的输出</strong>；  </li>
+<li><strong>哈希函数的输入是一串二进制位向量</strong>。当我们要哈希一串字符串时，哈希函数读取的不是这一串字符，而是该字符串对应的二进制位向量——这就是问题所在。由于不同的编码方式产生的二进制位向量通常不同，所以哈希的结果自然也就不同。  </li>
+<li>可以肯定的是，在相同环境下，相同的文本哈希的结果肯定是一样的；而不同的编码环境，文本哈希的结果通常不同。</li>
+</ol>
+]]></content>
+    <summary type="html"><![CDATA[<h3 id="问题提出"><strong>问题提出</strong></h3>
+<p>这两天在学习Git的工作原理，了解到Git会每一个文件的内容使用<code>SHA-1</code>进行哈希。刚开始在宿舍的笔记本安装了<code>msysGit</code>，照着《Pro Git》这本书的示例操作了一遍，产生的哈希值与书上给的是一致的，这符合我的理解。然而，今天在实验室使用<code>GitHub</code>的<code>Git shell</code>，哈希的结果却不一致，这让我很诧异。根据数据结构课程上学到的理论，应该是一致才对的。   </p>
+]]></summary>
+    
+      <category term="git" scheme="http://www.eleways.com/tags/git/"/>
+    
+  </entry>
+  
+</feed>
